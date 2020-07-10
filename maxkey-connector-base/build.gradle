@@ -1,0 +1,12 @@
+description = "maxkey-connector-base"
+
+apply plugin: 'java'
+apply plugin: 'eclipse-wtp'
+
+
+dependencies {
+	//local jars
+	compile fileTree(dir: '../maxkey-lib/*/', include: '*.jar')
+	
+   
+}

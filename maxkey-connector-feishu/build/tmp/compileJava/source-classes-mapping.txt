@@ -1,0 +1,10 @@
+org/maxkey/connector/feishu/Group2Feishu.java
+ org.maxkey.connector.feishu.Group2Feishu
+org/maxkey/connector/FeishuConsumerApplication.java
+ org.maxkey.connector.FeishuConsumerApplication
+org/maxkey/connector/feishu/Password2Feishu.java
+ org.maxkey.connector.feishu.Password2Feishu
+org/maxkey/connector/feishu/UserInfo2Feishu.java
+ org.maxkey.connector.feishu.UserInfo2Feishu
+org/maxkey/connector/feishu/Organization2Feishu.java
+ org.maxkey.connector.feishu.Organization2Feishu

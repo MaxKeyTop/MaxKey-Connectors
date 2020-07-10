@@ -1,0 +1,19 @@
+/*
+ * in the user guide at https://docs.gradle.org
+ */
+rootProject.name = 'MaxKey-Connectors'
+
+//connectors
+include 'maxkey-connector-base'
+//MS Active Directory
+include 'maxkey-connector-activedirectory'
+//OpenLDAP
+include 'maxkey-connector-ldap'
+//企业微信
+include 'maxkey-connector-workweixin'
+//阿里钉钉
+include 'maxkey-connector-dingding'
+//字节跳动飞书
+include 'maxkey-connector-feishu'
+//华为WeLink
+include 'maxkey-connector-welink'

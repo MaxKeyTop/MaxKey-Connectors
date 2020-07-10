@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Implementation-Title: maxkey-connector-ldap
+Implementation-Version: 2.0.0.RELEASE
+Implementation-Date: 2020-07-08T22:58:18.126+08:00[Asia/Shanghai]
+Created-By: shimingxy
+Implementation-Vendor: https://github.com/shimingxy/MaxKey
+

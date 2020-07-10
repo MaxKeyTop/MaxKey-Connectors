@@ -1,0 +1,10 @@
+org/maxkey/connector/dingding/Password2Dingding.java
+ org.maxkey.connector.dingding.Password2Dingding
+org/maxkey/connector/dingding/Organization2Dingding.java
+ org.maxkey.connector.dingding.Organization2Dingding
+org/maxkey/connector/DingdingConsumerApplication.java
+ org.maxkey.connector.DingdingConsumerApplication
+org/maxkey/connector/dingding/UserInfo2Dingding.java
+ org.maxkey.connector.dingding.UserInfo2Dingding
+org/maxkey/connector/dingding/Group2Dingding.java
+ org.maxkey.connector.dingding.Group2Dingding
