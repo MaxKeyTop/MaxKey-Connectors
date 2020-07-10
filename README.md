@@ -1,4 +1,5 @@
 # MaxKey-Connectors
+<<<<<<< HEAD
 
 Active Directory
 
@@ -11,3 +12,5 @@ OpenLDAP
 飞书
 
 华为WeLink
+=======
+>>>>>>> b463ba5c6ddcba0e0e718837d1484065366e60c5
