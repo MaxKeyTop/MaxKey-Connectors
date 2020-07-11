@@ -4,9 +4,9 @@ Active Directory
 
 OpenLDAP
 
-企业微信支持
+企业微信
 
-钉钉支持
+钉钉
 
 飞书
 
