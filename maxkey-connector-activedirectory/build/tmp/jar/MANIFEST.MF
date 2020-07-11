@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-Implementation-Title: maxkey-connector-activedirectory
-Implementation-Version: 2.0.0.RELEASE
-Implementation-Date: 2020-07-08T22:58:18.072+08:00[Asia/Shanghai]
-Created-By: shimingxy
-Implementation-Vendor: https://github.com/shimingxy/MaxKey
-
