@@ -98,8 +98,7 @@ subprojects {
 	}
    repositories {  
         mavenLocal()
-        mavenCentral()
-        jcenter()
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/'}
 		maven { url "https://repo1.maven.org/maven2/" }
 		maven { url "https://mvnrepository.com/repos/central/" }
         maven { url "http://jcenter.bintray.com" }
@@ -110,6 +109,8 @@ subprojects {
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
         maven { url "https://maven.repository.redhat.com/ga/" }
 		maven { url "https://repository.apache.org/content/repositories/releases/" }
+		mavenCentral()
+        jcenter()
     }  
 	
 	//all dependencies
@@ -192,7 +193,7 @@ subprojects {
          compile group: 'org.springframework.boot', name: 'spring-boot-starter', version:  "${springBootVersion}"
          compile group: 'org.springframework.boot', name: 'spring-boot-actuator', version:  "${springBootVersion}"
          compile group: 'org.springframework.boot', name: 'spring-boot-autoconfigure', version:  "${springBootVersion}"
-        compile group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version:  "${springBootVersion}"
+         compile group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version:  "${springBootVersion}"
          compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:  "${springBootVersion}"
          compile group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat', version:  "${springBootVersion}"
          testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:  "${springBootVersion}"
@@ -307,23 +308,6 @@ subprojects {
 	task copyDepJars(type: Copy){
 		from configurations.runtime
 		into "$rootDir/build/maxkey-depjars"
-	}
-	
-	task copydemoWar2Release(type: Copy) {
-		into "$rootDir/build/demowar/"
-	    from "$buildDir/libs/"
-	    include '*demo*.war'
-	}
-	
-	task copyWar2Release(type: Copy) {
-		into "$rootDir/build/maxkey-war"
-	    from "$buildDir/libs/"
-	    include '*web*.war'
-	}
-	
-	task copyotherWar2Release(type: Copy) {
-		into "$rootDir/build/"
-	    from "$buildDir/libs/"
 	}
 
 	task buildRelease(dependsOn:['build','jar','copyjar2Release','copyDepJars'])  {
