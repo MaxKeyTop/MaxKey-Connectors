@@ -26,6 +26,7 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
 import org.maxkey.connector.OrganizationConnector;
+import org.maxkey.constants.ldap.OrganizationalUnit;
 import org.maxkey.domain.Organizations;
 import org.maxkey.persistence.ldap.ActiveDirectoryUtils;
 import org.slf4j.Logger;
@@ -59,12 +60,12 @@ public class Organization2Activedirectory  extends OrganizationConnector{
 			
 			Attributes attributes = new BasicAttributes();
 			attributes.put(new BasicAttribute("objectClass","organizationalUnit"));
-			attributes.put(new BasicAttribute("ou",organization.getName()));
+			attributes.put(new BasicAttribute(OrganizationalUnit.OU,organization.getName()));
 			//attributes.put(new BasicAttribute("name",organization.getName()));
 			//attributes.put(new BasicAttribute("id",organization.getId()));
 			//attributes.put(new BasicAttribute("porgname",organization.getpName()));
 			//attributes.put(new BasicAttribute("porgid",organization.getpId()));
-			attributes.put(new BasicAttribute("description",organization.getId()));
+			attributes.put(new BasicAttribute(OrganizationalUnit.DESCRIPTION,organization.getId()));
 			
 			String dn="ou="+organization.getName()+","+rdn;
 			

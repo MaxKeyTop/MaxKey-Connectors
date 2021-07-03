@@ -17,28 +17,26 @@
 
 package org.maxkey.connector.workweixin;
 
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.BasicAttribute;
-import javax.naming.directory.BasicAttributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.ModificationItem;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
-
 import org.maxkey.connector.UserInfoConnector;
-import org.maxkey.crypto.ReciprocalUtils;
 import org.maxkey.domain.UserInfo;
-import org.maxkey.persistence.ldap.LdapUtils;
+import org.maxkey.workweixin.domain.WorkWeixinUsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+
 @Component(value = "userInfoConnector")
 public class UserInfo2Weixin  extends UserInfoConnector{
 	private final static Logger logger = LoggerFactory.getLogger(UserInfo2Weixin.class);
-
-	LdapUtils  ldapUtils;
+	static String CREATE_USER_URL 	=	"https://qyapi.weixin.qq.com/cgi-bin/user/create?access_token=%s";
+	static String UPDATE_USER_URL 	=	"https://qyapi.weixin.qq.com/cgi-bin/user/update?access_token=%s";
+	static String DELETE_USER_URL 	=	"https://qyapi.weixin.qq.com/cgi-bin/user/delete?access_token=%s&userid=%s";
+	static String GET_USER_URL		= 	"https://qyapi.weixin.qq.com/cgi-bin/user/get?access_token=%s&userid=%s";
+	
+	@Autowired
+	AccessTokenService accessTokenService;
+	
 	
 	public UserInfo2Weixin() {
 		
@@ -47,92 +45,14 @@ public class UserInfo2Weixin  extends UserInfoConnector{
 	@Override
 	public boolean create(UserInfo userInfo) throws Exception{
 		logger.info("create");
-		try {
-			Attributes attributes = new BasicAttributes();
-			attributes.put(new BasicAttribute("objectClass","inetOrgPerson"));
-			attributes.put(new BasicAttribute("uid",userInfo.getUsername()));
-			attributes.put(new BasicAttribute("userPassword",ReciprocalUtils.decoder(userInfo.getDecipherable())));
-			attributes.put(new BasicAttribute("displayName",userInfo.getDisplayName()));
-			attributes.put(new BasicAttribute("cn",userInfo.getDisplayName()));
-			attributes.put(new BasicAttribute("givenName",userInfo.getGivenName()));
-			attributes.put(new BasicAttribute("sn",userInfo.getFamilyName()));
-
-			attributes.put(new BasicAttribute("mobile",userInfo.getWorkPhoneNumber()==null?"":userInfo.getWorkPhoneNumber()));
-			attributes.put(new BasicAttribute("mail",userInfo.getWorkEmail()==null?"":userInfo.getWorkEmail()));
 		
-			attributes.put(new BasicAttribute("employeeNumber",userInfo.getEmployeeNumber()==null?"":userInfo.getEmployeeNumber()));
-			attributes.put(new BasicAttribute("ou",userInfo.getDepartment()==null?"":userInfo.getDepartment()));
-			String managerDn="uid=dummy";
-			if(userInfo.getManagerId()==null||userInfo.getManagerId().equals("")){
-
-			}else{
-				UserInfo queryManager=new UserInfo();
-				queryManager.setId(userInfo.getManagerId());
-				UserInfo manager=loadUser(queryManager);
-				managerDn="uid="+manager.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			}
-			attributes.put(new BasicAttribute("manager",managerDn));
-			attributes.put(new BasicAttribute("departmentNumber",userInfo.getDepartmentId()==null?"":userInfo.getDepartmentId()));
-			attributes.put(new BasicAttribute("title",userInfo.getJobTitle()==null?"":userInfo.getJobTitle()));
-			
-			
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-		
-			ldapUtils.getCtx().createSubcontext(dn, attributes);
-			ldapUtils.close();
-			super.create(userInfo);
-		} catch (NamingException e) {
-			e.printStackTrace();
-		}
 		return true;
 	}
 	
 	@Override
 	public boolean update(UserInfo userInfo) throws Exception{
 		logger.info("update");
-		try {
-			SearchControls constraints = new SearchControls();
-			constraints.setSearchScope(ldapUtils.getSearchScope());
-			NamingEnumeration<SearchResult> results = ldapUtils.getConnection()
-					.search(ldapUtils.getBaseDN(), "(&(objectClass=inetOrgPerson)(uid="+userInfo.getUsername()+"))", constraints);
-			if (results == null || !results.hasMore()) {
-				return create(loadUser(userInfo));
-			}
-			
-			ModificationItem[] modificationItems = new ModificationItem[10];
-			modificationItems[0]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("displayName",userInfo.getDisplayName()));
-			modificationItems[1]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("cn",userInfo.getDisplayName()));
-			modificationItems[2]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("givenName",userInfo.getGivenName()));
-			modificationItems[3]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("sn",userInfo.getFamilyName()));
-			
-			modificationItems[4]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("mobile",userInfo.getWorkPhoneNumber()==null?"":userInfo.getWorkPhoneNumber()));
-			modificationItems[5]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("mail",userInfo.getWorkEmail()==null?"":userInfo.getWorkEmail()));
-			
-			modificationItems[6]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("employeeNumber",userInfo.getEmployeeNumber()==null?"":userInfo.getEmployeeNumber()));
-			modificationItems[7]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("ou",userInfo.getDepartment()==null?"":userInfo.getDepartment()));
-			modificationItems[8]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("departmentNumber",userInfo.getDepartmentId()==null?"":userInfo.getDepartmentId()));
-			modificationItems[9]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("title",userInfo.getJobTitle()==null?"":userInfo.getJobTitle()));
-			
-			String managerDn="uid=dummy";
-			if(userInfo.getManagerId()==null||userInfo.getManagerId().equals("")){
-
-			}else{
-				UserInfo queryManager=new UserInfo();
-				queryManager.setId(userInfo.getManagerId());
-				UserInfo manager=loadUser(queryManager);
-				managerDn="uid="+manager.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			}
-			modificationItems[9]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("manager",managerDn));
-
-			
-			
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			
-			ldapUtils.getCtx().modifyAttributes(dn, modificationItems);
-			ldapUtils.close();
-		} catch (NamingException e) {
-			e.printStackTrace();
-		}
+		
 		return true;
 		
 	}
@@ -140,18 +60,35 @@ public class UserInfo2Weixin  extends UserInfoConnector{
 	@Override
 	public boolean delete(UserInfo userInfo) throws Exception{
 		logger.info("delete");
-		try {
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			ldapUtils.getCtx().destroySubcontext(dn);
-			ldapUtils.close();
-			super.delete(userInfo);
-		} catch (NamingException e) {
-			e.printStackTrace();
-		}
+		
 		return true;
 	}
 
 	public UserInfo loadUser(UserInfo UserInfo) {
 		return null;
+	}
+	
+	
+	public WorkWeixinUsers  buildUserInfo( UserInfo userInfo) {
+		WorkWeixinUsers user = new  WorkWeixinUsers();
+		
+		user.setUserid(userInfo.getUsername());//账号
+		user.setName(userInfo.getDisplayName());//名字
+		user.setAlias(userInfo.getNickName());//名字
+		
+		user.setMobile(userInfo.getMobile());//手机
+		user.setEmail(userInfo.getEmail());
+		user.setGender(userInfo.getGender()+"");
+		
+		user.setTelephone(userInfo.getWorkPhoneNumber());//工作电话
+		if(userInfo.getDepartmentId()!= null && !userInfo.getDepartmentId().equals("")) {
+			user.setMain_department(Long.parseLong(userInfo.getDepartmentId()));
+		}
+		user.setPosition(userInfo.getJobTitle());//职务
+		user.setAddress(userInfo.getWorkAddressFormatted());//工作地点
+
+		//激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业。
+		user.setStatus(userInfo.getStatus());
+		return user;
 	}
 }

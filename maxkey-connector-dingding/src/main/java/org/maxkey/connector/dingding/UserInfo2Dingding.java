@@ -17,28 +17,32 @@
 
 package org.maxkey.connector.dingding;
 
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.BasicAttribute;
-import javax.naming.directory.BasicAttributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.ModificationItem;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
-
+import java.util.ArrayList;
+import java.util.List;
+import org.joda.time.DateTime;
 import org.maxkey.connector.UserInfoConnector;
-import org.maxkey.crypto.ReciprocalUtils;
 import org.maxkey.domain.UserInfo;
-import org.maxkey.persistence.ldap.LdapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.dingtalk.api.DefaultDingTalkClient;
+import com.dingtalk.api.DingTalkClient;
+import com.dingtalk.api.request.OapiV2UserCreateRequest;
+import com.dingtalk.api.request.OapiV2UserCreateRequest.DeptOrder;
+import com.dingtalk.api.request.OapiV2UserCreateRequest.DeptTitle;
+import com.dingtalk.api.request.OapiV2UserDeleteRequest;
+import com.dingtalk.api.request.OapiV2UserUpdateRequest;
+import com.dingtalk.api.response.OapiV2UserCreateResponse;
+import com.dingtalk.api.response.OapiV2UserDeleteResponse;
+import com.dingtalk.api.response.OapiV2UserUpdateResponse;
+
 @Component(value = "userInfoConnector")
 public class UserInfo2Dingding  extends UserInfoConnector{
 	private final static Logger logger = LoggerFactory.getLogger(UserInfo2Dingding.class);
 
-	LdapUtils  ldapUtils;
+	@Autowired
+	AccessTokenService accessTokenService;
 	
 	public UserInfo2Dingding() {
 		
@@ -47,92 +51,98 @@ public class UserInfo2Dingding  extends UserInfoConnector{
 	@Override
 	public boolean create(UserInfo userInfo) throws Exception{
 		logger.info("create");
-		try {
-			Attributes attributes = new BasicAttributes();
-			attributes.put(new BasicAttribute("objectClass","inetOrgPerson"));
-			attributes.put(new BasicAttribute("uid",userInfo.getUsername()));
-			attributes.put(new BasicAttribute("userPassword",ReciprocalUtils.decoder(userInfo.getDecipherable())));
-			attributes.put(new BasicAttribute("displayName",userInfo.getDisplayName()));
-			attributes.put(new BasicAttribute("cn",userInfo.getDisplayName()));
-			attributes.put(new BasicAttribute("givenName",userInfo.getGivenName()));
-			attributes.put(new BasicAttribute("sn",userInfo.getFamilyName()));
-
-			attributes.put(new BasicAttribute("mobile",userInfo.getWorkPhoneNumber()==null?"":userInfo.getWorkPhoneNumber()));
-			attributes.put(new BasicAttribute("mail",userInfo.getWorkEmail()==null?"":userInfo.getWorkEmail()));
+		DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/create");
+		OapiV2UserCreateRequest req = new OapiV2UserCreateRequest();
+		req.setUserid(userInfo.getUsername());
+		req.setName(userInfo.getDisplayName());
+		req.setMobile(userInfo.getMobile());
+		req.setHideMobile(false);
+		req.setTelephone(userInfo.getWorkPhoneNumber());
+		req.setJobNumber(userInfo.getEmployeeNumber());
+		req.setTitle(userInfo.getJobTitle());
+		req.setEmail(userInfo.getEmail());
+		req.setOrgEmail(userInfo.getWorkEmail());
+		req.setWorkPlace(userInfo.getWorkOfficeName());
+		req.setRemark(userInfo.getDescription());
 		
-			attributes.put(new BasicAttribute("employeeNumber",userInfo.getEmployeeNumber()==null?"":userInfo.getEmployeeNumber()));
-			attributes.put(new BasicAttribute("ou",userInfo.getDepartment()==null?"":userInfo.getDepartment()));
-			String managerDn="uid=dummy";
-			if(userInfo.getManagerId()==null||userInfo.getManagerId().equals("")){
-
-			}else{
-				UserInfo queryManager=new UserInfo();
-				queryManager.setId(userInfo.getManagerId());
-				UserInfo manager=loadUser(queryManager);
-				managerDn="uid="+manager.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			}
-			attributes.put(new BasicAttribute("manager",managerDn));
-			attributes.put(new BasicAttribute("departmentNumber",userInfo.getDepartmentId()==null?"":userInfo.getDepartmentId()));
-			attributes.put(new BasicAttribute("title",userInfo.getJobTitle()==null?"":userInfo.getJobTitle()));
-			
-			
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-		
-			ldapUtils.getCtx().createSubcontext(dn, attributes);
-			ldapUtils.close();
-			super.create(userInfo);
-		} catch (NamingException e) {
-			e.printStackTrace();
+		if(userInfo.getDepartmentId() !=null && !userInfo.getDescription().equals("")) {
+			req.setDeptIdList(userInfo.getDepartmentId());
 		}
+		
+		/*
+		List<DeptOrder> list2 = new ArrayList<DeptOrder>();
+		DeptOrder obj3 = new DeptOrder();
+		list2.add(obj3);
+		obj3.setDeptId(2L);
+		obj3.setOrder(1L);
+		req.setDeptOrderList(list2);
+		*/
+		/*
+		List<DeptTitle> list5 = new ArrayList<DeptTitle>();
+		DeptTitle obj6 = new DeptTitle();
+		list5.add(obj6);
+		obj6.setDeptId(2L);
+		obj6.setTitle("资深产品经理");
+		req.setDeptTitleList(list5);
+		*/
+		//req.setExtension("{\"爱好\":\"旅游\"}");
+		
+		req.setSeniorMode(false);
+		if(userInfo.getEntryDate() !=null && !userInfo.getEntryDate().equals("")) {
+			req.setHiredDate(new DateTime(userInfo.getEntryDate()).getMillis());
+		}
+		OapiV2UserCreateResponse rsp = client.execute(req, "access_token");
+		System.out.println(rsp.getBody());
+			super.create(userInfo);
+
 		return true;
 	}
 	
 	@Override
 	public boolean update(UserInfo userInfo) throws Exception{
 		logger.info("update");
-		try {
-			SearchControls constraints = new SearchControls();
-			constraints.setSearchScope(ldapUtils.getSearchScope());
-			NamingEnumeration<SearchResult> results = ldapUtils.getConnection()
-					.search(ldapUtils.getBaseDN(), "(&(objectClass=inetOrgPerson)(uid="+userInfo.getUsername()+"))", constraints);
-			if (results == null || !results.hasMore()) {
-				return create(loadUser(userInfo));
-			}
-			
-			ModificationItem[] modificationItems = new ModificationItem[10];
-			modificationItems[0]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("displayName",userInfo.getDisplayName()));
-			modificationItems[1]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("cn",userInfo.getDisplayName()));
-			modificationItems[2]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("givenName",userInfo.getGivenName()));
-			modificationItems[3]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("sn",userInfo.getFamilyName()));
-			
-			modificationItems[4]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("mobile",userInfo.getWorkPhoneNumber()==null?"":userInfo.getWorkPhoneNumber()));
-			modificationItems[5]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("mail",userInfo.getWorkEmail()==null?"":userInfo.getWorkEmail()));
-			
-			modificationItems[6]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("employeeNumber",userInfo.getEmployeeNumber()==null?"":userInfo.getEmployeeNumber()));
-			modificationItems[7]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("ou",userInfo.getDepartment()==null?"":userInfo.getDepartment()));
-			modificationItems[8]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("departmentNumber",userInfo.getDepartmentId()==null?"":userInfo.getDepartmentId()));
-			modificationItems[9]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("title",userInfo.getJobTitle()==null?"":userInfo.getJobTitle()));
-			
-			String managerDn="uid=dummy";
-			if(userInfo.getManagerId()==null||userInfo.getManagerId().equals("")){
-
-			}else{
-				UserInfo queryManager=new UserInfo();
-				queryManager.setId(userInfo.getManagerId());
-				UserInfo manager=loadUser(queryManager);
-				managerDn="uid="+manager.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			}
-			modificationItems[9]=new ModificationItem(DirContext.REPLACE_ATTRIBUTE,new BasicAttribute("manager",managerDn));
-
-			
-			
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			
-			ldapUtils.getCtx().modifyAttributes(dn, modificationItems);
-			ldapUtils.close();
-		} catch (NamingException e) {
-			e.printStackTrace();
+		DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/update");
+		OapiV2UserUpdateRequest req = new OapiV2UserUpdateRequest();
+		req.setUserid(userInfo.getUsername());
+		req.setName(userInfo.getDisplayName());
+		req.setMobile(userInfo.getMobile());
+		req.setHideMobile(false);
+		req.setTelephone(userInfo.getWorkPhoneNumber());
+		req.setJobNumber(userInfo.getEmployeeNumber());
+		req.setTitle(userInfo.getJobTitle());
+		req.setEmail(userInfo.getEmail());
+		req.setOrgEmail(userInfo.getWorkEmail());
+		req.setWorkPlace(userInfo.getWorkOfficeName());
+		req.setRemark(userInfo.getDescription());
+		if(userInfo.getDepartmentId() !=null && !userInfo.getDescription().equals("")) {
+			req.setDeptIdList(userInfo.getDepartmentId());
 		}
+		/*
+		List<com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptOrder> list2 = 
+				new ArrayList<com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptOrder>();
+		com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptOrder obj3 = 
+				new com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptOrder();
+		list2.add(obj3);
+		obj3.setDeptId(Long.parseLong(userInfo.getDepartmentId()));
+		obj3.setOrder(1L);
+		req.setDeptOrderList(list2);
+		List<com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptTitle> list5 = 
+				new ArrayList<com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptTitle>();
+		com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptTitle obj6 = 
+				new com.dingtalk.api.request.OapiV2UserUpdateRequest.DeptTitle();
+		list5.add(obj6);
+		obj6.setDeptId(2L);
+		obj6.setTitle("资深产品经理");
+		req.setDeptTitleList(list5);
+		*/
+		//req.setExtension("{\"爱好\":\"旅游\",\"年龄\":\"24\"}");
+		req.setSeniorMode(false);
+		if(userInfo.getEntryDate() !=null && !userInfo.getEntryDate().equals("")) {
+			req.setHiredDate(new DateTime(userInfo.getEntryDate()).getMillis());
+		}
+		req.setLanguage("zh_CN");
+		OapiV2UserUpdateResponse rsp = client.execute(req, "access_token");
+		System.out.println(rsp.getBody());
 		return true;
 		
 	}
@@ -140,18 +150,16 @@ public class UserInfo2Dingding  extends UserInfoConnector{
 	@Override
 	public boolean delete(UserInfo userInfo) throws Exception{
 		logger.info("delete");
-		try {
-			String dn="uid="+userInfo.getUsername()+",dc=users,"+ldapUtils.getBaseDN();
-			ldapUtils.getCtx().destroySubcontext(dn);
-			ldapUtils.close();
-			super.delete(userInfo);
-		} catch (NamingException e) {
-			e.printStackTrace();
-		}
+		DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/delete");
+		OapiV2UserDeleteRequest req = new OapiV2UserDeleteRequest();
+		req.setUserid(userInfo.getUsername());
+		OapiV2UserDeleteResponse rsp = client.execute(req, "access_token");
+		System.out.println(rsp.getBody());
 		return true;
 	}
 
 	public UserInfo loadUser(UserInfo UserInfo) {
 		return null;
 	}
+
 }
